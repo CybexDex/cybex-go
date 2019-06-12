@@ -2,76 +2,47 @@ package main
 
 import (
 	"fmt"
-	"log"
-	"os"
-	"time"
 
-	"github.com/CybexDex/cybex-go/api"
-	"github.com/CybexDex/cybex-go/config"
-	"github.com/CybexDex/cybex-go/crypto"
-	"github.com/CybexDex/cybex-go/operations"
+	apim "github.com/CybexDex/cybex-go/api"
 	"github.com/CybexDex/cybex-go/types"
-	"github.com/juju/errors"
 )
 
-var (
-	cyb    = types.NewGrapheneID("1.3.0")
-	cny    = types.NewGrapheneID("1.3.113")
-	keyBag *crypto.KeyBag
-	seller *types.GrapheneID
-)
-
-const (
-	wsFullApiUrl = "wss://cybex.openledger.info/ws"
-)
+var api apim.CybexAPI
 
 func init() {
-	// init is called before the API is initialized,
-	// hence must define current chain config explicitly.
-	config.SetCurrentConfig(config.ChainIDCYB)
-	seller = types.NewGrapheneID(
-		os.Getenv("CYB_TEST_ACCOUNT"),
-	)
-	keyBag = crypto.NewKeyBag()
-	if err := keyBag.Add(os.Getenv("CYB_TEST_WIF")); err != nil {
-		log.Fatal(errors.Annotate(err, "Add [wif]"))
-	}
+	// empty use default
+	api = apim.New("", "")
+	// api = apim.New("wss://shenzhen.51nebula.com/", "")
+	// set username and password, you can ignore this and pass them with real call
+	api.SetCredentials("username", "password")
 }
-
-func main() {
-	api := api.New(wsFullApiUrl, "")
-	if err := api.Connect(); err != nil {
-		log.Fatal(errors.Annotate(err, "OnConnect"))
-	}
-
-	api.OnError(func(err error) {
-		log.Fatal(errors.Annotate(err, "OnError"))
-	})
-
-	op := operations.LimitOrderCreateOperation{
-		FillOrKill: false,
-		Seller:     *seller,
-		Extensions: types.Extensions{},
-		AmountToSell: types.AssetAmount{
-			Amount: 100,
-			Asset:  *cyb,
-		},
-		MinToReceive: types.AssetAmount{
-			Amount: 1000000,
-			Asset:  *cny,
-		},
-	}
-
-	op.Expiration.Set(24 * time.Hour)
-
-	tx, err := api.BuildSignedTransaction(keyBag, cyb, &op)
+func creatOrder() {
+	// market CYB/TEST.ETH sell by price 0.012 amount 100
+	re, err := api.LimitOrder("", "TEST.ETH", "CYB", "sell", "0.012", "100", "")
 	if err != nil {
-		log.Fatal(errors.Annotate(err, "BuildSignedTransaction"))
+		fmt.Println(1, err)
 	}
-
-	if err := api.BroadcastTransaction(tx); err != nil {
-		log.Fatal(errors.Annotate(err, "BroadcastTransaction"))
+	fmt.Println(re)
+}
+func getOrder() types.LimitOrders {
+	re2, err := api.LimitOrderGet("")
+	if err != nil {
+		fmt.Println(1, err)
 	}
-
-	fmt.Println("operation successfull broadcasted")
+	return re2
+}
+func cancalOrder(id string) {
+	re2, err := api.LimitOrderCancel("", id, "")
+	if err != nil {
+		fmt.Println(1, err)
+	}
+	fmt.Println(re2)
+}
+func main() {
+	creatOrder()
+	s := getOrder()
+	for _, order := range s {
+		fmt.Println(order.ID)
+		cancalOrder(order.ID.String())
+	}
 }
