@@ -64,7 +64,11 @@ func (p *cybexAPI) VerifySign(accountName string, toSign string, sign string) (r
 			return true, nil
 		}
 	}
-
+	for k, _ := range account.Owner.KeyAuths {
+		if k.Equal(pub) {
+			return true, nil
+		}
+	}
 	return false, nil
 }
 func (p *cybexAPI) LoginVerify(fund types.Fund, sign string) (re bool, err error) {
