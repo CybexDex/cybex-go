@@ -43,6 +43,7 @@ type CybexAPI interface {
 
 	//Websocket API functions
 	BroadcastTransaction(tx *types.SignedTransaction) error
+	ValidateTransaction(tx *types.SignedTransaction) error
 	CancelAllSubscriptions() error
 	CancelOrder(orderID types.GrapheneObject, broadcast bool) (*types.SignedTransaction, error)
 	GetAccountBalances(account types.GrapheneObject, assets ...types.GrapheneObject) (types.AssetAmounts, error)
@@ -181,6 +182,14 @@ func (p *cybexAPI) CancelAllSubscriptions() error {
 //If it fails to apply at the connected node, an error will be thrown and the transaction will not be broadcast.
 func (p *cybexAPI) BroadcastTransaction(tx *types.SignedTransaction) error {
 	_, err := p.wsClient.CallAPI(p.broadcastAPIID, "broadcast_transaction", tx)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+func (p *cybexAPI) ValidateTransaction(tx *types.SignedTransaction) error {
+	_, err := p.wsClient.CallAPI(p.databaseAPIID, "validate_transaction", tx)
 	if err != nil {
 		return err
 	}
