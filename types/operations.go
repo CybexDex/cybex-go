@@ -88,7 +88,9 @@ func (p *OperationEnvelope) UnmarshalJSON(data []byte) error {
 		p.Operation = getOp()
 		if err := ffjson.Unmarshal(raw[1], p.Operation); err != nil {
 			logging.DDumpUnmarshaled(descr, raw[1])
-			return errors.Annotatef(err, "unmarshal Operation %s", p.Type)
+
+			return nil
+			// return errors.Annotatef(err, "unmarshal Operation %s", p.Type)
 		}
 	} else {
 		// fmt.Printf("Operation type %s not yet supported\n", p.Type)
