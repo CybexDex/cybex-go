@@ -3,6 +3,7 @@ package api
 import (
 	"log"
 	"math/rand"
+	"strings"
 
 	"strconv"
 
@@ -82,8 +83,17 @@ func (p *cybexAPI) PreSends(tosends []types.SimpleSend) (tx *types.SignedTransac
 			return nil, err
 		}
 		ops = append(ops, op)
-		keyBag1 := KeyBagByUserPass(tosend.From, tosend.Password)
-		keyBag.Merge(keyBag1)
+		passArr := strings.Split(tosend.Password, ",")
+		lenpass := len(passArr)
+		if lenpass == 1 {
+			keyBag1 := KeyBagByUserPass(tosend.From, tosend.Password)
+			keyBag.Merge(keyBag1)
+		} else if lenpass == 2 {
+			activekey := passArr[0]
+			memokey := passArr[1]
+			keyBag.Add(activekey)
+			keyBag.Add(memokey)
+		}
 	}
 	switch len(ops) {
 	case 1:
