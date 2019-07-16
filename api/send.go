@@ -21,8 +21,18 @@ var (
 
 func (p *cybexAPI) makeOp(from string, to string, amount string, asset string, memo string, password string) (*operations.TransferOperation, error) {
 	nonce := types.UInt64(rand.Int63())
+	keyBag := crypto.NewKeyBag()
+	passArr := strings.Split(password, ",")
+	lenpass := len(passArr)
+	if lenpass == 1 {
+		keyBag1 := KeyBagByUserPass(from, password)
+		keyBag.Merge(keyBag1)
+	} else if lenpass >= 2 {
+		for _, newkey := range passArr {
+			keyBag.Add(newkey)
+		}
+	}
 	fromUser, err := p.GetAccountByName(from)
-	keyBag := KeyBagByUserPass(from, password)
 	if err != nil {
 		return nil, err
 	}
