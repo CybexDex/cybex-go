@@ -88,11 +88,10 @@ func (p *cybexAPI) PreSends(tosends []types.SimpleSend) (tx *types.SignedTransac
 		if lenpass == 1 {
 			keyBag1 := KeyBagByUserPass(tosend.From, tosend.Password)
 			keyBag.Merge(keyBag1)
-		} else if lenpass == 2 {
-			activekey := passArr[0]
-			memokey := passArr[1]
-			keyBag.Add(activekey)
-			keyBag.Add(memokey)
+		} else if lenpass >= 2 {
+			for _, newkey := range passArr {
+				keyBag.Add(newkey)
+			}
 		}
 	}
 	switch len(ops) {
