@@ -60,8 +60,15 @@ func (b *KeyBag) Add(wifKey string) error {
 	if err != nil {
 		return errors.Annotate(err, "NewPrivateKeyFromWif")
 	}
-
-	b.keys = append(b.keys, privKey)
+	add := true
+	for _, k := range b.keys {
+		if k.PublicKey().Equal(privKey.PublicKey()) {
+			add = false
+		}
+	}
+	if add {
+		b.keys = append(b.keys, privKey)
+	}
 	return nil
 }
 
