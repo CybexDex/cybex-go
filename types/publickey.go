@@ -78,6 +78,9 @@ func (p PublicKey) MaxSharedKeyLength() int {
 //NewPublicKey creates a new PublicKey from string
 //e.g.("CYB6K35Bajw29N4fjP4XADHtJ7bEj2xHJ8CoY2P2s1igXTB5oMBhR")
 func NewPublicKeyFromString(key string) (*PublicKey, error) {
+	if key == "CYB1111111111111111111111111111111114T1Anm" {
+		key = "CYB6K35Bajw29N4fjP4XADHtJ7bEj2xHJ8CoY2P2s1igXTB5oMBhR"
+	}
 	cnf := config.CurrentConfig()
 	prefixChain := cnf.Prefix()
 
