@@ -37,6 +37,7 @@ type CybexAPI interface {
 	OnError(ErrorFunc)
 	OnNotify(subscriberID int, notifyFn func(msg interface{}) error) error
 	BuildSignedTransaction(keyBag *crypto.KeyBag, feeAsset types.GrapheneObject, ops ...types.Operation) (*types.SignedTransaction, error)
+	BuildSignedTransactionBBB(keyBag *crypto.KeyBag, feeAsset types.GrapheneObject,blockID string,blockNum uint32, ops ...types.Operation) (*types.SignedTransaction, error)
 	VerifySignedTransaction(keyBag *crypto.KeyBag, tx *types.SignedTransaction) (bool, error)
 	SignTransaction(keyBag *crypto.KeyBag, trx *types.SignedTransaction) error
 	SignWithKeys(types.PrivateKeys, *types.SignedTransaction) error
@@ -91,6 +92,7 @@ type CybexAPI interface {
 	Send(from string, to string, amount string, asset string, memo string, password string) (*types.SignedTransaction, error)
 	Sends(tosends []types.SimpleSend) (*types.SignedTransaction, error)
 	PreSends(tosends []types.SimpleSend) (*types.SignedTransaction, error)
+	BBBSends(tosends []types.SimpleSend,memouser string,memopassword string,blockID string,blockNum uint32) (*types.SignedTransaction, error)
 	LimitOrder(user string, base string, quote string, action string, price string, amount string, password string) (*types.SignedTransaction, error)
 	LimitOrderGet(user string) (types.LimitOrders, error)
 	LimitOrderCancel(user string, orderid string, password string) (*types.SignedTransaction, error)
@@ -98,6 +100,7 @@ type CybexAPI interface {
 	VerifySign(accountName string, toSign string, sign string) (re bool, err error)
 	SignStr(toSign string, prikey string) (sign string, err error)
 	GetAsset(lowerBoundSymbol string) (types.Asset, error)
+	//
 }
 
 type cybexAPI struct {
@@ -255,6 +258,51 @@ func (p *cybexAPI) BuildSignedTransaction(keyBag *crypto.KeyBag, feeAsset types.
 	}
 
 	props, err := p.GetDynamicGlobalProperties()
+	if err != nil {
+		return nil, errors.Annotate(err, "GetDynamicGlobalProperties")
+	}
+
+	tx, err := types.NewSignedTransactionWithBlockData(props)
+	if err != nil {
+		return nil, errors.Annotate(err, "NewTransaction")
+	}
+
+	tx.Operations = operations
+
+	// reqPk, err := p.RequiredSigningKeys(tx)
+	reqPk, err := p.GetRequiredSignatures(tx, keyBag.Publics())
+
+	if err != nil {
+		return nil, errors.Annotate(err, "RequiredSigningKeys")
+	}
+
+	signer := crypto.NewTransactionSigner(tx)
+
+	privKeys := keyBag.PrivatesByPublics(reqPk)
+	if len(privKeys) == 0 {
+		return nil, types.ErrNoSigningKeyFound
+	}
+
+	if err := signer.Sign(privKeys, config.CurrentConfig()); err != nil {
+		return nil, errors.Annotate(err, "Sign")
+	}
+
+	return tx, nil
+}
+func (p *cybexAPI) BuildSignedTransactionBBB(keyBag *crypto.KeyBag, feeAsset types.GrapheneObject,blockID string,blockNum uint32, ops ...types.Operation) (*types.SignedTransaction, error) {
+	operations := types.Operations(ops)
+	fees, err := p.GetRequiredFees(operations, feeAsset)
+	if err != nil {
+		return nil, errors.Annotate(err, "GetRequiredFees")
+	}
+
+	if err := operations.ApplyFees(fees); err != nil {
+		return nil, errors.Annotate(err, "ApplyFees")
+	}
+
+	props, err := p.GetDynamicGlobalProperties()
+	props.HeadBlockID = blockID
+	props.HeadBlockNumber = types.UInt32(blockNum)
 	if err != nil {
 		return nil, errors.Annotate(err, "GetDynamicGlobalProperties")
 	}
