@@ -1,7 +1,7 @@
 package api
 
 import (
-	// "fmt"
+	"fmt"
 
 	"time"
 
@@ -315,19 +315,22 @@ func (p *cybexAPI) BuildSignedTransactionBBB(keyBag *crypto.KeyBag, feeAsset typ
 	tx.Operations = operations
 
 	// reqPk, err := p.RequiredSigningKeys(tx)
-	reqPk, err := p.GetRequiredSignatures(tx, keyBag.Publics())
-
+	// pub1,err := types.NewPublicKeyFromString("CYB8Y83mrc5iV2ES2cVnX2YaEkA8WNUPYWYDB7QaZygjAkCtCHNHe")
+	// pub2,err := types.NewPublicKeyFromString("CYB6tyQ1J7FtwEadpSAD8rW8Db9d86bhnyhixSbXiKrCd2soAqzd4")
+	pubs := keyBag.Publics()
+	// pubs = append(pubs,*pub1)
+	reqPk, err := p.GetRequiredSignatures(tx, pubs)
 	if err != nil {
 		return nil, errors.Annotate(err, "RequiredSigningKeys")
 	}
 
 	signer := crypto.NewTransactionSigner(tx)
-
+	
 	privKeys := keyBag.PrivatesByPublics(reqPk)
+	fmt.Println("sign need pubkey",reqPk,len(reqPk),len(privKeys))
 	if len(privKeys) == 0 {
 		return nil, types.ErrNoSigningKeyFound
 	}
-
 	if err := signer.Sign(privKeys, config.CurrentConfig()); err != nil {
 		return nil, errors.Annotate(err, "Sign")
 	}
