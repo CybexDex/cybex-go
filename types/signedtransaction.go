@@ -128,7 +128,7 @@ func NewSignedTransactionWithBlockData(props *DynamicGlobalProperties) (*SignedT
 	}
 	t := time.Now().UnixNano()
 	rand.Seed(t)
-	s := props.Time.Add(TxExpirationDefault + time.Duration(rand.Int31n(1000))*time.Second)
+	s := props.Time.Add(TxExpirationDefault + time.Duration(rand.Int31n(100))*time.Second)
 	tx := SignedTransaction{
 		Transaction: Transaction{
 			Extensions:     Extensions{},
